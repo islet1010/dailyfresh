@@ -15,11 +15,10 @@ class User(BaseModel, AbstractUser):
         # 参数1：密钥
         # 参数２：有效时间　一天
         s = TimedJSONWebSignatureSerializer(settings.SECRET_KEY, 60 * 60 * 24)
-        # self.id: 用户ｉｄ 类型为ｂｙｔｅs
+        # self.id: 用户ｉｄ 类型为bytes
         datas = s.dumps({'confirm': self.id})  # type: bytes
         # bytes -> str
         return datas.decode()
-
 
     class Meta(object):
         # 指定表名 app01_user
