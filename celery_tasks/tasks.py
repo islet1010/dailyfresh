@@ -6,7 +6,6 @@
 # django.setup()
 
 
-
 from celery.app.base import Celery
 from django.core.mail import send_mail
 from dailyfresh import settings
