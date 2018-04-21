@@ -1,4 +1,5 @@
 import re
+from time import sleep
 
 from django.core.mail import send_mail
 from django.db.utils import IntegrityError
@@ -72,9 +73,10 @@ class RegisterView(View):
 
         # todo: 发送激活邮件
         token = user.generate_active_token()
-        # 同步发送：会阻塞
+        # 方式1：同步发送：会阻塞
         # RegisterView.send_active_mail(username, email, token)
-        # 使用celery异步发送：不会阻塞
+        # sleep(5)
+        # 方式2：使用celery异步发送：不会阻塞
         # 会保存方法名参数等到Redis数据库中
         send_active_mail.delay(username, email, token)
 

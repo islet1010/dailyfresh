@@ -1,10 +1,10 @@
-# # 在celery服务器所在的项目中，
-# # 需要手动初始化django环境
-# # 在celery服务器端所在的项目添加如下代码
+# 在celery服务器所在的项目中，
+# 需要手动添加如下代码，初始化django环境
 # import os
 # import django
 # os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dailyfresh.settings")
 # django.setup()
+
 
 
 from celery.app.base import Celery
