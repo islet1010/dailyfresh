@@ -8,6 +8,7 @@ from django.views.generic import View
 from itsdangerous import TimedJSONWebSignatureSerializer, SignatureExpired
 
 from apps.users.models import User
+from celery_tasks.tasks import send_active_mail
 from dailyfresh import settings
 
 
@@ -71,7 +72,11 @@ class RegisterView(View):
 
         # todo: 发送激活邮件
         token = user.generate_active_token()
-        RegisterView.send_active_mail(username, email, token)
+        # 同步发送：会阻塞
+        # RegisterView.send_active_mail(username, email, token)
+        # 使用celery异步发送：不会阻塞
+        # 会保存方法名参数等到Redis数据库中
+        send_active_mail.delay(username, email, token)
 
         # 响应请求
         return HttpResponse('注册成功，进入登录界面')
@@ -105,9 +110,10 @@ class ActiveView(View):
         """
         try:
             # 解密token
-            s = TimedJSONWebSignatureSerializer(settings.SECRET_KEY, 3600*24)
+            s = TimedJSONWebSignatureSerializer(settings.SECRET_KEY)
             # 字符串 -> bytes
-            dict_data = s.loads(token.encode())
+            # dict_data = s.loads(token.encode())
+            dict_data = s.loads(token)
         except SignatureExpired:
             # 判断是否失效
             return HttpResponse('激活链接已经失效')
