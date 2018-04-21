@@ -9,7 +9,7 @@ class User(BaseModel, AbstractUser):
     """用户模型类"""
 
     class Meta(object):
-        # 指定表名
+        # 指定表名 app01_user
         db_table = 'df_user'
 
 
