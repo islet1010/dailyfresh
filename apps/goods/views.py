@@ -3,11 +3,13 @@ from django.shortcuts import render
 from django.views.generic import View
 
 from apps.users.models import User
+from apps.users.views import UserAddressView
 
 
 class IndexView(View):
 
     def get(self, request):
+        print(UserAddressView.__mro__)
 
         # 显示登录的用户名
         # 方式1：主动查询登录用户并显示

@@ -148,3 +148,8 @@ CACHES = {
 # 保存session数据到Redis中
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+# 如果未登录，则跳转到如下url地址
+LOGIN_URL = '/users/login'
+
+

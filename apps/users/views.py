@@ -2,6 +2,7 @@ import re
 from time import sleep
 
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
@@ -10,9 +11,10 @@ from django.shortcuts import render, redirect
 from django.views.generic import View
 from itsdangerous import TimedJSONWebSignatureSerializer, SignatureExpired
 
-from apps.users.models import User
+from apps.users.models import User, Address
 from celery_tasks.tasks import send_active_mail
 from dailyfresh import settings
+from utils.common import LoginRequiredView, LoginRequiredMixin
 
 
 def register(request):
@@ -170,10 +172,16 @@ class LoginView(View):
             # 关闭浏览器后，登录状态失效
             request.session.set_expiry(0)
 
-        # 响应请求
-        # return redirect('/index')
-        # 注意： urls.py文件中，urlspatterns是一个列表，不要使用{}
-        return redirect(reverse('goods:index'))
+        # 登录成功后，要跳转到next指向的界面
+        next = request.GET.get('next')
+        if next:
+            # 不为空，则跳转到next指向的界面: /users/address
+            return redirect(next)
+        else:
+            # 为空，则默认跳转到首页
+            # return redirect('/index')
+            # 注意： urls.py文件中，urlspatterns是一个列表，不要使用{}
+            return redirect(reverse('goods:index'))
 
 
 class LogoutView(View):
@@ -185,16 +193,29 @@ class LogoutView(View):
         return redirect(reverse('goods:index'))
 
 
-class UserInfoView(View):
+class UserInfoView(LoginRequiredMixin, View):
 
     def get(self, request):
+
+        # # 未登录则跳转到登录界面
+        # if not request.user.is_authenticated():
+        #     return redirect(reverse('users:login'))
+
+        # 查询登录用户最新添加的地址，并显示出来
+        try:
+            address = request.user.address_set.latest('create_time')
+        except:
+            address = None
+
         context = {
             'which_page': 1,
+            'address': address,
+            # 'user': request.user
         }
         return render(request, 'user_center_info.html', context)
 
 
-class UserOrderView(View):
+class UserOrderView(LoginRequiredMixin, View):
 
     def get(self, request):
         context = {
@@ -203,17 +224,60 @@ class UserOrderView(View):
         return render(request, 'user_center_order.html', context)
 
 
-class UserAddressView(View):
+# mro
+class UserAddressView(LoginRequiredMixin, View):
 
     def get(self, request):
+
+        # 查询登录用户最新添加的地址，并显示出来
+        try:
+            # address = Address.objects.filter(
+            #     user=request.user).order_by('-create_time')[0]
+            address = request.user.address_set.latest('create_time')
+        except:
+            address = None
+
         context = {
             'which_page': 3,
+            'address': address,
         }
         return render(request, 'user_center_site.html', context)
 
+    def post(self, request):
+        # 获取post请求参数
+        receiver = request.POST.get('receiver')
+        detail = request.POST.get('detail')
+        zip_code = request.POST.get('zip_code')
+        mobile = request.POST.get('mobile')
+
+        # del request.session['_auth_user_id']
+
+        # 合法性校验
+        if not all([receiver, detail, mobile]):
+            return render(request, 'user_center_site.html',
+                          {'errmsg': '参数不能为空'})
+
+        # 新增一个地址
+        Address.objects.create(
+            receiver_name=receiver,
+            receiver_mobile=mobile,
+            detail_addr=detail,
+            zip_code=zip_code,
+            user=request.user,
+        )
+
+        # 添加地址成功，回到当前界面，刷新数据：/users/address
+        return redirect(reverse('users:address'))
 
 
-
+# login_required(views.address)
+# @login_required
+def address(request):
+    """进入用户地址界面"""
+    context = {
+        'which_page': 3,
+    }
+    return render(request, 'user_center_site.html', context)
 
 
 

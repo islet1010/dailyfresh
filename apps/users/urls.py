@@ -1,4 +1,5 @@
 from django.conf.urls import url, include
+from django.contrib.auth.decorators import login_required
 
 from apps.users import views
 
@@ -18,5 +19,9 @@ urlpatterns = [
     url(r'^orders$', views.UserOrderView.as_view(), name='orders'),
     url(r'^address$', views.UserAddressView.as_view(), name='address'),
     url(r'^$', views.UserInfoView.as_view(), name='info'),
+
+    # url(r'^address$', login_required(views.UserAddressView.as_view()),
+    #     name='address'),
+    # url(r'^address$', login_required(views.address), name='address'),
 
 ]
