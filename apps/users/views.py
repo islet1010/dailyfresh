@@ -1,7 +1,9 @@
 import re
 from time import sleep
 
+from django.contrib.auth import authenticate, login
 from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
 from django.http.response import HttpResponse
 from django.shortcuts import render, redirect
@@ -133,6 +135,38 @@ class LoginView(View):
     def get(self, request):
         """进入登录界面"""
         return render(request, 'login.html')
+
+    def post(self, request):
+
+        # 获取post请求参数
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        remember = request.POST.get('remember')
+
+        # 校验合法性
+        if not all([username, password]):
+            return render(request, 'login.html', {'errmsg': '用户名和密码不能为空'})
+
+        # 业务处理：登录(判断用户名和密码是否正确)
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            # 判断用户名和密码不正确
+            return render(request, 'login.html', {'errmsg': '用户名和密码不正确'})
+
+        if not user.is_active:
+            # 判断用户是否激活
+            return render(request, 'login.html', {'errmsg': '用户名未激活'})
+
+        # 登录成功，使用session保存用户登录状态
+        # request.session['_auth_user_id'] = user.id
+        # 使用django的login方法保存用户登录状态
+        login(request, user)
+
+        # 响应请求
+        # return redirect('/index')
+        # 注意： urls.py文件中，urlspatterns是一个列表，不要使用{}
+        return redirect(reverse('goods:index'))
 
 
 
