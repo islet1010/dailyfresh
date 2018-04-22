@@ -185,7 +185,31 @@ class LogoutView(View):
         return redirect(reverse('goods:index'))
 
 
+class UserInfoView(View):
 
+    def get(self, request):
+        context = {
+            'which_page': 1,
+        }
+        return render(request, 'user_center_info.html', context)
+
+
+class UserOrderView(View):
+
+    def get(self, request):
+        context = {
+            'which_page': 2,
+        }
+        return render(request, 'user_center_order.html', context)
+
+
+class UserAddressView(View):
+
+    def get(self, request):
+        context = {
+            'which_page': 3,
+        }
+        return render(request, 'user_center_site.html', context)
 
 
 

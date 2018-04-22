@@ -12,8 +12,11 @@ urlpatterns = [
     url(r'^register$', views.RegisterView.as_view(), name='register'),
     url(r'^login$', views.LoginView.as_view(), name='login'),
     url(r'^logout$', views.LogoutView.as_view(), name='logout'),
-
     # http://127.0.0.1:8000/users/active/JhbGciOi..mV4cCI6MTU
     url(r'^active/(.+)$', views.ActiveView.as_view(), name='active'),
+
+    url(r'^orders$', views.UserOrderView.as_view(), name='orders'),
+    url(r'^address$', views.UserAddressView.as_view(), name='address'),
+    url(r'^$', views.UserInfoView.as_view(), name='info'),
 
 ]

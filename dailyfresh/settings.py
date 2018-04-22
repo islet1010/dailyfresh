@@ -29,8 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
+# 使用自定义的User
 AUTH_USER_MODEL = 'users.User'
 
 
