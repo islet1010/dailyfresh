@@ -32,3 +32,4 @@ def send_active_mail(username, email, token):
 
     send_mail(subject, message, from_email, recipient_list,
               html_message=html_message)
+    pass

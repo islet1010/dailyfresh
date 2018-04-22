@@ -1,9 +1,14 @@
 from django.http.response import HttpResponse
 from django.shortcuts import render
+from django.views.generic import View
 
 
-def index(request):
-    """进入首页"""
-    return HttpResponse('首页')
+class IndexView(View):
+
+    def get(self, request):
+        return render(request, 'index.html')
+
+
+
 
 

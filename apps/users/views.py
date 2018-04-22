@@ -128,6 +128,17 @@ class ActiveView(View):
         return HttpResponse('激活成功，跳转到登录界面')
 
 
+class LoginView(View):
+
+    def get(self, request):
+        """进入登录界面"""
+        return render(request, 'login.html')
+
+
+
+
+
+
 
 
 
