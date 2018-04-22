@@ -134,4 +134,18 @@ EMAIL_HOST_PASSWORD = 'python123'           # 客户端授权码，非邮箱登�
 EMAIL_FROM = '天天生鲜<islet1010@163.com>'   # 打开邮件显示在‘发件人’中的签名
 
 
+# django项目的缓存配置
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": ""
+        }
+    }
+}
 
+# 保存session数据到Redis中
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"

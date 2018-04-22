@@ -1,7 +1,7 @@
 import re
 from time import sleep
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
@@ -163,10 +163,28 @@ class LoginView(View):
         # 使用django的login方法保存用户登录状态
         login(request, user)
 
+        if remember == 'on':
+            # 保持登录状态两周 (None会保存两周)
+            request.session.set_expiry(None)
+        else:
+            # 关闭浏览器后，登录状态失效
+            request.session.set_expiry(0)
+
         # 响应请求
         # return redirect('/index')
         # 注意： urls.py文件中，urlspatterns是一个列表，不要使用{}
         return redirect(reverse('goods:index'))
+
+
+class LogoutView(View):
+
+    def get(self, request):
+        """注销"""
+        # 调用 django的logout方法，实现退出，会删除登录用户的id（session键值对数据）
+        logout(request)
+        return redirect(reverse('goods:index'))
+
+
 
 
 
