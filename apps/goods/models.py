@@ -78,6 +78,7 @@ class GoodsImage(BaseModel):
 
 class IndexSlideGoods(BaseModel):
     """主页轮播商品展示"""
+    # FileField
     image = models.ImageField(upload_to="banner", verbose_name="图片")
     # mysql 索引
     index = models.SmallIntegerField(default=0, verbose_name="顺序")

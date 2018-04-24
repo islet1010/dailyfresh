@@ -199,6 +199,7 @@ class UserInfoView(LoginRequiredMixin, View):
         # todo: 从Redis中读取当前登录用户浏览过的商品
         # 返回一个StrictRedis
         # strict_redis = get_redis_connection('default')
+        # strict_redis = StrictRedis(host='127.0.0.1', port=6379, db=0)
         strict_redis = get_redis_connection()  # type: StrictRedis
         # 读取所有的商品id,返回一个 列表
         # history_1 = [3, 1, 2]
@@ -206,8 +207,15 @@ class UserInfoView(LoginRequiredMixin, View):
         # 最多只取出5个商品id: [3, 1, 2]
         sku_ids = strict_redis.lrange(key, 0, 4)
         print(sku_ids)
-        # 根据商品id，查询出商品对象
-        skus = GoodsSKU.objects.filter(id__in=sku_ids)
+
+        # 顺序有问题： 根据商品id，查询出商品对象
+        # select * from df_goods_sku where id in [3,1,2]
+        # skus = GoodsSKU.objects.filter(id__in=sku_ids)
+        # 解决：
+        skus = []  # 保存查询出来的商品对象
+        for sku_id in sku_ids:  # sku_id: bytes
+            sku = GoodsSKU.objects.get(id=int(sku_id))
+            skus.append(sku)
 
         # 查询登录用户最新添加的地址，并显示出来
         address = request.user.address_set.latest('create_time')
