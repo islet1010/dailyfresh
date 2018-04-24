@@ -1,13 +1,34 @@
 from django.http.response import HttpResponse
 from django.shortcuts import render
 from django.views.generic import View
+from django_redis import get_redis_connection
+from redis import StrictRedis
 
-from apps.goods.models import GoodsCategory, IndexSlideGoods, IndexPromotion
+from apps.goods.models import GoodsCategory, IndexSlideGoods, IndexPromotion, IndexCategoryGoods
 from apps.users.models import User
 from apps.users.views import UserAddressView
 
 
-class IndexView(View):
+class BaseCartView(View):
+
+    def get_cart_count(self, request):
+        """获取用户购物车中商品的总数量"""
+        # todo: 读取用户添加到购物车中的商品总数量
+        cart_count = 0  # 购物车商品总数量
+        if request.user.is_authenticated():
+            # 已经登录
+            strict_redis = get_redis_connection()  # type: StrictRedis
+            # cart_1 = {1: 2, 2 : 2}
+            key = 'cart_%s' % request.user.id
+            # 返回 list类型，存储的元素是 bytes
+            # [2, 2]
+            vals = strict_redis.hvals(key)
+            for count in vals:  # count为bytes类型
+                cart_count += int(count)
+        return cart_count
+
+
+class IndexView(BaseCartView):
 
     def get2(self, request):
         print(UserAddressView.__mro__)
@@ -31,12 +52,29 @@ class IndexView(View):
         categories = GoodsCategory.objects.all()
         slide_skus = IndexSlideGoods.objects.all().order_by('index')
         promotions = IndexPromotion.objects.all().order_by('index')[0:2]
+        # category_skus = IndexCategoryGoods.objects.all()
+
+        for c in categories:
+            # 查询当前类型所有的文字商品和图片商品
+            text_skus = IndexCategoryGoods.objects.filter(
+                display_type=0, category=c)
+            image_skus = IndexCategoryGoods.objects.filter(
+                display_type=1, category=c)[0:4]
+            # 动态给对象新增实例属性
+            c.text_skus = text_skus
+            c.image_skus = image_skus
+
+        # 获取用户添加到购物车商品的总数量
+        cart_count = self.get_cart_count(request)
+        # cart_count = super().get_cart_count(request)
 
         # 定义模板显示的数据
         context = {
             'categories': categories,
             'slide_skus': slide_skus,
             'promotions': promotions,
+            'cart_count': cart_count,
+            # 'category_skus': category_skus,
         }
 
         # 响应请求
