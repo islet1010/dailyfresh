@@ -1,16 +1,17 @@
 import re
-from time import sleep
 
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
 from django.http.response import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.generic import View
+from django_redis import get_redis_connection
 from itsdangerous import TimedJSONWebSignatureSerializer, SignatureExpired
+from redis.client import StrictRedis
 
+from apps.goods.models import GoodsSKU
 from apps.users.models import User, Address
 from celery_tasks.tasks import send_active_mail
 from dailyfresh import settings
@@ -90,12 +91,12 @@ class RegisterView(View):
     @staticmethod
     def send_active_mail(username, email, token):
         """发送激活邮件"""
-        subject = '天天生鲜激活邮件'         # 标题，必须指定
-        message = ''                       # 正文
-        from_email = settings.EMAIL_FROM   # 发件人
-        recipient_list = [email]           # 收件人
+        subject = '天天生鲜激活邮件'  # 标题，必须指定
+        message = ''  # 正文
+        from_email = settings.EMAIL_FROM  # 发件人
+        recipient_list = [email]  # 收件人
         # 正文 （带有html样式）
-        html_message = ('<h3>尊敬的%s：感谢注册天天生鲜</h3>' 
+        html_message = ('<h3>尊敬的%s：感谢注册天天生鲜</h3>'
                         '请点击以下链接激活您的帐号:<br/>'
                         '<a href="http://127.0.0.1:8000/users/active/%s">'
                         'http://127.0.0.1:8000/users/active/%s</a>'
@@ -106,7 +107,6 @@ class RegisterView(View):
 
 
 class ActiveView(View):
-
     def get(self, request, token: str):
         """
         用户激活
@@ -133,13 +133,11 @@ class ActiveView(View):
 
 
 class LoginView(View):
-
     def get(self, request):
         """进入登录界面"""
         return render(request, 'login.html')
 
     def post(self, request):
-
         # 获取post请求参数
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -180,12 +178,11 @@ class LoginView(View):
         else:
             # 为空，则默认跳转到首页
             # return redirect('/index')
-            # 注意： urls.py文件中，urlspatterns是一个列表，不要使用{}
+            # 注意： urls.py文件中，urlpatterns是一个列表，不要使用{}
             return redirect(reverse('goods:index'))
 
 
 class LogoutView(View):
-
     def get(self, request):
         """注销"""
         # 调用 django的logout方法，实现退出，会删除登录用户的id（session键值对数据）
@@ -194,29 +191,36 @@ class LogoutView(View):
 
 
 class UserInfoView(LoginRequiredMixin, View):
-
     def get(self, request):
-
         # # 未登录则跳转到登录界面
         # if not request.user.is_authenticated():
         #     return redirect(reverse('users:login'))
 
-        # 查询登录用户最新添加的地址，并显示出来
-        try:
-            address = request.user.address_set.latest('create_time')
-        except:
-            address = None
+        # todo: 从Redis中读取当前登录用户浏览过的商品
+        # 返回一个StrictRedis
+        # strict_redis = get_redis_connection('default')
+        strict_redis = get_redis_connection()  # type: StrictRedis
+        # 读取所有的商品id,返回一个 列表
+        # history_1 = [3, 1, 2]
+        key = 'history_%s' % request.user.id
+        # 最多只取出5个商品id: [3, 1, 2]
+        sku_ids = strict_redis.lrange(key, 0, 4)
+        print(sku_ids)
+        # 根据商品id，查询出商品对象
+        skus = GoodsSKU.objects.filter(id__in=sku_ids)
 
+        # 查询登录用户最新添加的地址，并显示出来
+        address = request.user.address_set.latest('create_time')
         context = {
             'which_page': 1,
             'address': address,
+            'skus': skus,
             # 'user': request.user
         }
         return render(request, 'user_center_info.html', context)
 
 
 class UserOrderView(LoginRequiredMixin, View):
-
     def get(self, request):
         context = {
             'which_page': 2,
@@ -224,9 +228,7 @@ class UserOrderView(LoginRequiredMixin, View):
         return render(request, 'user_center_order.html', context)
 
 
-# mro
 class UserAddressView(LoginRequiredMixin, View):
-
     def get(self, request):
 
         # 查询登录用户最新添加的地址，并显示出来
@@ -278,22 +280,3 @@ def address(request):
         'which_page': 3,
     }
     return render(request, 'user_center_site.html', context)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
