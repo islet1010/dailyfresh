@@ -1,4 +1,8 @@
+from time import sleep
+
 from django.contrib import admin
+from django.core.cache import cache
+
 from celery_tasks.tasks import *
 from apps.goods.models import *
 
@@ -12,6 +16,9 @@ class BaseAdmin(admin.ModelAdmin):
         print('save_model: %s ' % obj)
         # 通过celery异步生成静态的首页
         generate_static_index_page.delay()
+        # generate_static_index_page()
+        # 修改了数据库数据就需要删除缓存
+        cache.delete('index_page_data')
 
     def delete_model(self, request, obj):
         """在管理后台删除一条数据时调用"""
@@ -19,6 +26,9 @@ class BaseAdmin(admin.ModelAdmin):
         print('delete_model: %s ' % obj)
         # 通过celery异步生成静态的首页
         generate_static_index_page.delay()
+        # generate_static_index_page()
+        # 修改了数据库数据就需要删除缓存
+        cache.delete('index_page_data')
 
 
 class GoodsCategoryAdmin(BaseAdmin):

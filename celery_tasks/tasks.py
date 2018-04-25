@@ -5,6 +5,7 @@
 # os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dailyfresh.settings")
 # django.setup()
 
+from time import sleep
 
 from celery.app.base import Celery
 from django.core.mail import send_mail
@@ -41,6 +42,7 @@ def send_active_mail(username, email, token):
 @app.task
 def generate_static_index_page():
     """生成静态首页"""
+    sleep(2)
     # 查询首页商品数据：商品类别，轮播图， 促销活动
     categories = GoodsCategory.objects.all()
     slide_skus = IndexSlideGoods.objects.all().order_by('index')
