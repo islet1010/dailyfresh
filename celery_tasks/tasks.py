@@ -8,6 +8,9 @@
 
 from celery.app.base import Celery
 from django.core.mail import send_mail
+from django.template import loader
+
+from apps.goods.models import GoodsCategory, IndexSlideGoods, IndexPromotion, IndexCategoryGoods
 from dailyfresh import settings
 
 # 创建celery客户端
@@ -33,3 +36,60 @@ def send_active_mail(username, email, token):
     send_mail(subject, message, from_email, recipient_list,
               html_message=html_message)
     pass
+
+
+@app.task
+def generate_static_index_page():
+    """生成静态首页"""
+    # 查询首页商品数据：商品类别，轮播图， 促销活动
+    categories = GoodsCategory.objects.all()
+    slide_skus = IndexSlideGoods.objects.all().order_by('index')
+    promotions = IndexPromotion.objects.all().order_by('index')[0:2]
+
+    for c in categories:
+        # 查询当前类型所有的文字商品和图片商品
+        text_skus = IndexCategoryGoods.objects.filter(
+            display_type=0, category=c)
+        image_skus = IndexCategoryGoods.objects.filter(
+            display_type=1, category=c)[0:4]
+        # 动态给对象新增实例属性
+        c.text_skus = text_skus
+        c.image_skus = image_skus
+
+    # 获取用户添加到购物车商品的总数量
+    cart_count = 0
+
+    context = {
+        'categories': categories,
+        'slide_skus': slide_skus,
+        'promotions': promotions,
+        'cart_count': cart_count,
+    }
+
+    # 渲染生成静态的首页:index.html
+    template = loader.get_template('index.html')
+    html_str = template.render(context)
+    # 生成首页
+    path = '/home/python/Desktop/static/index.html'
+    with open(path, 'w') as file:
+        file.write(html_str)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
