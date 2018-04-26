@@ -40,7 +40,8 @@
 
     <div class="goods_detail_con clearfix">
         <div class="goods_detail_pic fl">
-            <img src="{{ sku.default_image.url }}"></div>
+            <img width="300px" height="300px"
+                 src="{{ sku.default_image.url }}"></div>
 
         <div class="goods_detail_list fr">
             <h3>{{ sku.name }}</h3>
@@ -50,20 +51,20 @@
                 <span class="show_unit">单  位：{{ sku.unit }}</span>
             </div>
 
-
             {# 显示其它规格的商品 #}
-              {% if other_skus %}
+            {% if other_skus %}
                 <div>
                     <p>其他规格的商品：</p>
                     <ul>
-                       {% for sku in other_skus %}
-                           <a href="{% url 'goods:detail'  sku.id %}">
-                           <li>{{ sku.name }}</li>
-                           </a>
-                       {% endfor %}
+                        {% for sku in other_skus %}
+                            <a href="{% url 'goods:detail'  sku.id %}">
+                                <li>{{ sku.name }}</li>
+                            </a>
+                        {% endfor %}
                     </ul>
-                 </div>
-              {% endif %}
+                </div>
+            {% endif %}
+
 
             <div class="goods_num clearfix">
                 <div class="num_name fl">数 量：</div>
@@ -84,8 +85,6 @@
     <div class="main_wrap clearfix">
         <div class="l_wrap fl clearfix">
             <div class="new_goods">
-
-
 
                 <h3>新品推荐</h3>
                 <ul>
