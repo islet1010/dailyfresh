@@ -214,8 +214,11 @@ class UserInfoView(LoginRequiredMixin, View):
         # 解决：
         skus = []  # 保存查询出来的商品对象
         for sku_id in sku_ids:  # sku_id: bytes
-            sku = GoodsSKU.objects.get(id=int(sku_id))
-            skus.append(sku)
+            try:
+                sku = GoodsSKU.objects.get(id=int(sku_id))
+                skus.append(sku)
+            except:
+                pass
 
         # 查询登录用户最新添加的地址，并显示出来
         address = request.user.address_set.latest('create_time')
