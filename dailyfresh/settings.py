@@ -160,7 +160,9 @@ DEFAULT_FILE_STORAGE = 'utils.fdfs.storage.FdfsStorage'
 HAYSTACK_CONNECTIONS = {
     'default': {
         # 使用whoosh搜索引擎
-        'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+        # 'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+        # 使用jieba分词
+        'ENGINE': 'haystack.backends.whoosh_cn_backend.WhooshEngine',
         # 指定生成的索引库保存在哪个目录下
         'PATH': os.path.join(BASE_DIR, 'whoosh_index'),
     }

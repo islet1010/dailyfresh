@@ -53,8 +53,8 @@ class GoodsSKU(BaseModel):
     category = models.ForeignKey(GoodsCategory, verbose_name="类别")
     spu = models.ForeignKey(GoodsSPU, verbose_name="商品SPU")
 
-    def __str__(self):
-        return self.name
+    # def __str__(self):
+    #     return self.name
 
     class Meta:
         db_table = "df_goods_sku"

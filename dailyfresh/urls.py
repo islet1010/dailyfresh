@@ -21,6 +21,8 @@ urlpatterns = [
 
     # 使用第三方的富文本编辑器：包含tinymce urls配置文件
     url(r'^tinymce/', include('tinymce.urls')),
+    # 全文检索
+    url(r'^search/', include('haystack.urls')),
 
     url(r'^users/', include('apps.users.urls', namespace='users')),
     url(r'^cart/', include('apps.cart.urls', namespace='cart')),
