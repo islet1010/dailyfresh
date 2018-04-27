@@ -171,7 +171,6 @@ class ListView(BaseCartView):
         :param page_num: 页码
         :return:
         """
-
         # 获取请求参数
         sort = request.GET.get('sort')
 
@@ -192,6 +191,7 @@ class ListView(BaseCartView):
                 category=category).order_by('-create_time')[0:2]
         except:
             new_skus = None
+
         # 类别下所有的商品
         if sort == 'price':
             skus = GoodsSKU.objects.filter(category=category).order_by('price')  # 价格

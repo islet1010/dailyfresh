@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'haystack',             # 使用haystack全文检索框架
     'tinymce',              # 使用第三方的富文本编辑器
     'apps.users',           # 用户模块
     'apps.goods',           # 商品模块
@@ -155,4 +156,15 @@ LOGIN_URL = '/users/login'
 # 指定使用自定义的文件存储类
 DEFAULT_FILE_STORAGE = 'utils.fdfs.storage.FdfsStorage'
 
+# 配置haystack框架
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        # 使用whoosh搜索引擎
+        'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+        # 指定生成的索引库保存在哪个目录下
+        'PATH': os.path.join(BASE_DIR, 'whoosh_index'),
+    }
+}
 
+# 当添加、修改、删除了数据时，自动生成索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
