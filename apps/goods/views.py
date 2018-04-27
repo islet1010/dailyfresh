@@ -160,6 +160,83 @@ class DetailView(BaseCartView):
         return render(request, 'detail.html', context)
 
 
+class ListView(BaseCartView):
+
+    def get(self, request, category_id, page_num):
+        """
+        显示商品列表界面
+        :param request:
+        :param category_id: 类别id
+        :param page_num: 页码
+        :return:
+        """
+        # 获取请求参数
+        sort = request.GET.get('sort')
+
+        # 校验参数合法性
+        try:
+            category = GoodsCategory.objects.get(id=category_id)
+        except GoodsCategory.DoesNotExist:
+            # 查询不到类别，跳转到首页
+            # return redirect('/index')
+            return redirect(reverse('goods:index'))
+
+        # 业务：查询对应的商品数据
+        # *商品分类信息
+        categories = GoodsCategory.objects.all()
+        # *新品推荐信息（在GoodsSKU表中，查询特定类别信息，按照时间倒序）
+        try:
+            new_skus = GoodsSKU.objects.filter(
+                category=category).order_by('-create_time')[0:2]
+        except:
+            new_skus = None
+        # *类别下所有的商品
+        if sort == 'price':
+            skus = GoodsSKU.objects.filter(category=category).order_by('price')  # 价格
+        elif sort == 'hot':
+            skus = GoodsSKU.objects.filter(category=category).order_by('-sales')  # 销量
+        else:  # default
+            skus = GoodsSKU.objects.filter(category=category)                    # 默认排序
+            sort = 'default'
+        # todo: 商品分页信息
+        # *购物车信息
+        cart_count = self.get_cart_count(request)
+
+        # 定义模板显示的数据
+        context = {
+            'category': category,
+            'categories': categories,
+            'skus': skus,
+            'new_skus': new_skus,
+            'cart_count': cart_count,
+            'sort': sort,
+        }
+
+        # 响应请求
+        return render(request, 'list.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

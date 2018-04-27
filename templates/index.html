@@ -76,7 +76,8 @@
 
 
             </div>
-            <a href="#" class="goods_more fr" id="fruit_more">查看更多 ></a>
+            <a href="{% url 'goods:list' category.id 1 %}?sort=default"
+               class="goods_more fr" id="fruit_more">查看更多 ></a>
         </div>
 
         <div class="goods_con clearfix">

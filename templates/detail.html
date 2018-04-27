@@ -14,7 +14,8 @@
 
                     {# 显示类别 #}
                     {% for category in categories %}
-                        <li><a href="#" class="fruit">{{ category.name }}</a></li>
+                        <li><a href="{% url 'goods:list' category.id 1 %}?sort=default"
+                               class="fruit">{{ category.name }}</a></li>
                     {% endfor %}
 
 
@@ -33,7 +34,7 @@
     <div class="breadcrumb">
         <a href="#">全部分类</a>
         <span>></span>
-        <a href="#">{{ sku.category.name }}</a>
+        <a href="{% url 'goods:list' sku.category.id 1 %}?sort=default">{{ sku.category.name }}</a>
         <span>></span>
         <a href="#">商品详情</a>
     </div>
