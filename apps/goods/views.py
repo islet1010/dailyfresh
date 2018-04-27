@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.paginator import Paginator, EmptyPage
 from django.core.urlresolvers import reverse
 from django.http.response import HttpResponse
 from django.shortcuts import render, redirect
@@ -170,6 +171,7 @@ class ListView(BaseCartView):
         :param page_num: 页码
         :return:
         """
+
         # 获取请求参数
         sort = request.GET.get('sort')
 
@@ -190,7 +192,7 @@ class ListView(BaseCartView):
                 category=category).order_by('-create_time')[0:2]
         except:
             new_skus = None
-        # *类别下所有的商品
+        # 类别下所有的商品
         if sort == 'price':
             skus = GoodsSKU.objects.filter(category=category).order_by('price')  # 价格
         elif sort == 'hot':
@@ -198,7 +200,17 @@ class ListView(BaseCartView):
         else:  # default
             skus = GoodsSKU.objects.filter(category=category)                    # 默认排序
             sort = 'default'
+
         # todo: 商品分页信息
+        # 参数1： 要分页的数据
+        # 参数2： 每页显示多少条
+        paginator = Paginator(skus, 2)
+        try:
+            page = paginator.page(page_num)
+        except EmptyPage: # 页码出错
+            # 出错，默认显示第一页
+            page = paginator.page(1)
+
         # *购物车信息
         cart_count = self.get_cart_count(request)
 
@@ -206,7 +218,11 @@ class ListView(BaseCartView):
         context = {
             'category': category,
             'categories': categories,
-            'skus': skus,
+
+            # 'skus': skus,
+            'page': page,
+            'page_range': paginator.page_range,
+
             'new_skus': new_skus,
             'cart_count': cart_count,
             'sort': sort,

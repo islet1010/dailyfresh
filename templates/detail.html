@@ -15,7 +15,7 @@
                     {# 显示类别 #}
                     {% for category in categories %}
                         <li><a href="{% url 'goods:list' category.id 1 %}?sort=default"
-                               class="fruit">{{ category.name }}</a></li>
+                               class="{{ category.logo }}">{{ category.name }}</a></li>
                     {% endfor %}
 
 
