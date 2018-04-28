@@ -196,7 +196,7 @@ class ListView(BaseCartView):
         if sort == 'price':
             skus = GoodsSKU.objects.filter(category=category).order_by('price')  # 价格
         elif sort == 'hot':
-            skus = GoodsSKU.objects.filter(category=category).order_by('-sales')  # 销量
+            skus = GoodsSKU.objects.filter(category=category).order_by('-sales') # 销量
         else:  # default
             skus = GoodsSKU.objects.filter(category=category)                    # 默认排序
             sort = 'default'
