@@ -8,6 +8,40 @@ from apps.goods.models import GoodsSKU
 from utils.common import LoginRequiredMixin
 
 
+class CartDeleteView(View):
+
+    # /cart/delete
+    def post(self, request):
+        """删除购物车中的商品"""
+
+        # 判断用户是否有登录
+        if not request.user.is_authenticated():
+            return JsonResponse({'code': 1, 'errmsg': '请先登录'})
+
+        # 获取用户提交的参数
+        sku_id = request.POST.get('sku_id')
+
+        # 参数不能为空
+        if not sku_id:
+            return JsonResponse({'code': 2, 'errmsg': '商品id不能为空'})
+
+        # todo: 业务处理: 删除redis中对应的商品
+        # cart_1: {'1': '2', '2': '2'}
+        strict_redis = get_redis_connection()  # type: StrictRedis
+        key = 'cart_%s' % request.user.id
+        # 删除hash中的一个字段和值: hdel
+        strict_redis.hdel(key, sku_id)
+
+        # todo: 查询购物车中商品的总数量
+        total_count = 0   # 购物车商品总数量
+        vals = strict_redis.hvals(key)  # 列表 bytes
+        for val in vals:
+            total_count += int(val)    # bytes -> int
+
+        # json方式响应添加购物车结果
+        return JsonResponse({'code': 0, 'total_count': total_count})
+
+
 class AddCartView(View):
     """添加到购物车"""
 
