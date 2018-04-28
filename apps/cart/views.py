@@ -5,6 +5,7 @@ from django_redis import get_redis_connection
 from redis.client import StrictRedis
 
 from apps.goods.models import GoodsSKU
+from utils.common import LoginRequiredMixin
 
 
 class AddCartView(View):
@@ -59,3 +60,68 @@ class AddCartView(View):
 
         # json方式响应添加购物车结果
         return JsonResponse({'code': 0, 'total_count': total_count})
+
+
+class CartInfoView(LoginRequiredMixin, View):
+
+    def get(self, request):
+        """显示购物车界面"""
+
+        # 获取登录用户id
+        user_id = request.user.id
+
+        # 定义一个列表，保存用户购物车中所有的商品
+        skus = []
+        # 总数量
+        total_count = 0
+        # 总金额
+        total_amount = 0
+
+        # 从Redis中查询出当前登录用户的商品
+        # cart_1 = {1: 2 , 2: 2}
+        strict_redis = get_redis_connection()  # type: StrictRedis
+        key = 'cart_%s' % user_id
+        # 获取所有的键（商品id）  列表（bytes）
+        sku_ids = strict_redis.hkeys(key)
+        for sku_id in sku_ids:
+            # 从mysql中查询出对应的商品对象
+            sku = GoodsSKU.objects.get(id=int(sku_id))  # bytes -> int
+            # 获取商品数量
+            count = strict_redis.hget(key, sku_id)  # bytes
+            # 计算商品的小计金额
+            amount = sku.price * int(count)
+
+            # todo: 给商品对象新增实例属性： 数量 小计金额amount
+            sku.count = int(count)
+            sku.amount = amount
+
+            # todo: 累计总数量和总金额
+            total_count += int(count)
+            total_amount += amount
+
+            skus.append(sku)
+
+        # 定义模板数据
+        context = {
+            'skus': skus,
+            'total_count': total_count,
+            'total_amount': total_amount,
+        }
+
+        # 响应请求，显示html界面
+        return render(request, 'cart.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
