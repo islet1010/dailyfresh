@@ -146,40 +146,11 @@
             count = parseInt(count);
             count +=1;
 
-            // 定义post请求参数
-            var params = {
-                sku_id: sku_id,
-                count: count,
-                csrfmiddlewaretoken: csrf
-            };
-
             var $input = $(this).next();
             var $ul = $(this).parents('ul');
-
-            // 通过ajax发起post请求
-            // 请求url
-            // post参数
-            $.post('/cart/update', params, function (data) {
-                if (data.code == 0) {
-                    // 请求成功: {'code': 0, 'total_count': total_count}
-                    // 请求失败: {'code': 3, 'errmsg': 'count需为整数'}
-                    //alert('总数量：' + data.total_count)
-                    // todo: 刷新界面显示
-                    // 1.更新商品数量
-                    $input.val(count);
-                    // 2.更新商品小计金额
-                    update_goods_amount($ul);
-                    // 3. 更新勾选商品的总数量和总金额
-                    update_goods_info();
-                    // 4. 更新左上角所有商品的总数量
-                    $('.total_count').children('em').html(data.total_count)
-
-                } else {
-                    alert(data.errmsg)
-                }
-            })
-
-        })
+            // 发请求修改购物车商品数量
+            update_sku_count(sku_id, count, csrf, $input, $ul);
+        });
 
         // todo: 点击减号，修改商品数量
         $('.cart_list_td').find('.minus').click(function () {
@@ -195,38 +166,10 @@
             }
 
             count -= 1;
-            // 定义post请求参数
-            var params = {
-                sku_id: sku_id,
-                count: count,
-                csrfmiddlewaretoken: csrf
-            };
-
             var $input = $(this).prev();
             var $ul = $(this).parents('ul');
-
-            // 通过ajax发起post请求
-            // 请求url
-            // post参数
-            $.post('/cart/update', params, function (data) {
-                if (data.code == 0) {
-                    // 请求成功: {'code': 0, 'total_count': total_count}
-                    // 请求失败: {'code': 3, 'errmsg': 'count需为整数'}
-                    //alert('总数量：' + data.total_count)
-                    // todo: 刷新界面显示
-                    // 1.更新商品数量
-                    $input.val(count);
-                    // 2.更新商品小计金额
-                    update_goods_amount($ul);
-                    // 3. 更新勾选商品的总数量和总金额
-                    update_goods_info();
-                    // 4. 更新左上角所有商品的总数量
-                    $('.total_count').children('em').html(data.total_count)
-
-                } else {
-                    alert(data.errmsg)
-                }
-            })
+            // 发请求修改购物车商品数量
+            update_sku_count(sku_id, count, csrf, $input, $ul)
         });
 
         // 监听获取焦点事件： 记录商品数量
@@ -249,15 +192,20 @@
 
             count = parseInt(count);
 
+            var $input = $(this);
+            var $ul = $(this).parents('ul');
+            // 发请求修改购物车商品数量
+            update_sku_count(sku_id, count, csrf, $input, $ul)
+        });
+
+        // todo: 发请求，修改商品数量
+        function update_sku_count(sku_id, count, csrf, $input, $ul) {
             // 定义post请求参数
             var params = {
                 sku_id: sku_id,
                 count: count,
                 csrfmiddlewaretoken: csrf
             };
-
-            var $input = $(this);
-            var $ul = $(this).parents('ul');
 
             // 通过ajax发起post请求
             // 请求url
@@ -280,7 +228,7 @@
                     alert(data.errmsg)
                 }
             });
-        });
+        }
 
         // todo: 删除商品
         $('.cart_list_td').find('.col08').children('a').click(function () {
@@ -290,7 +238,7 @@
             // 定义请求参数
             var params = {
                sku_id:  sku_id,
-               csrfmiddlewaretoken:  csrf
+               csrfmiddlewaretoken: csrf
             };
 
             // 定义ul标签（一行商品）
@@ -303,7 +251,7 @@
                     // 删除一行商品
                     $ul.remove();
                     // 刷新界面左上角商品总数量
-                    $('.total_count').children('em').html(data.total_count)
+                    $('.total_count').children('em').html(data.total_count);
                     // 刷新勾选商品的总数量和总金额
                     update_goods_info();
                 } else {
