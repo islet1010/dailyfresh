@@ -21,7 +21,7 @@
 	</ul>
 
     {% for sku in skus %}
-	    <ul class="cart_list_td clearfix">
+	 <ul class="cart_list_td clearfix">
 		<li class="col01"><input type="checkbox" name="" checked></li>
 		<li class="col02"><img src="{{ sku.default_image.url }}"></li>
 		<li class="col03">{{ sku.name }}<br><em>{{ sku.price }}元/{{ sku.unit }}</em></li>
@@ -48,24 +48,73 @@
 	</ul>
 {% endblock %}
 
+{% block bottom_js %}
 
+    {% load staticfiles %}
+    <script type="text/javascript" src="{% static 'js/jquery-1.12.2.js' %}"></script>
+    <script type="text/javascript">
 
+        update_goods_info();
 
+        // todo: 更新商品的总数量和总金额
+        function update_goods_info() {
+            // 1. 定义变量，保存总数量和总金额
+            var total_count = 0;
+            var total_amount = 0;
+            // 2. 获取选中的checkbox, 再获取勾选的父标签ul, 再作循环每一个ul标签
+            $('.cart_list_td').find(':checked').parents('ul').each(function () {
+                // 3. 获取当前选中商品的数量和小计金额
+                // this: 指的是ul元素（一行商品）
+                var count =  $(this).find('.num_show').val();
+                var amount = $(this).find('.col07').text();
+                count = parseInt(count);
+                amount = parseFloat(amount);
+                 // 4. 累加总数量和总金额
+                total_count += count;
+                total_amount += amount;
+            });
+            // 5. 显示总数量
+            $('.settlements').find('b').html(total_count);
+            // 6. 显示总金额
+            $('.settlements').find('em').html(total_amount);
+        }
 
+        // todo: 全选与全不选
+        // 1. 获取全选checkbox, 并设置状态改变监听事件
+        $('.settlements').find(':checkbox').change(function () {
+            // 2. 获取全选checkbox的勾选状态
+            // $(this): 全选checkbox
+            var check = $(this).prop('checked');
+            // alert(check)
+            // 3. 获取所有商品checkbox,并进行遍历
+            $('.cart_list_td').find(":checkbox").each(function () {
+                // 4. 设置商品checkbox勾选状态与全选checkbox保持一致
+                // $(this): Checkbox
+                // 参数1： checked 表示 属性名
+                // 参数2： 指定True或者False, True表示勾选
+                $(this).prop('checked', check)
+            });
+            // 5. 更新商品总金额和总数量
+            update_goods_info();
+        });
 
-	<div class="footer">
-		<div class="foot_link">
-			<a href="#">关于我们</a>
-			<span>|</span>
-			<a href="#">联系我们</a>
-			<span>|</span>
-			<a href="#">招聘人才</a>
-			<span>|</span>
-			<a href="#">友情链接</a>		
-		</div>
-		<p>CopyRight © 2016 北京天天生鲜信息技术有限公司 All Rights Reserved</p>
-		<p>电话：010-****888    京ICP备*******8号</p>
-	</div>
-	
-</body>
-</html>
+        // todo: 更新全选checkbox的勾状态
+        // 1. 获取所有商品checkbox, 并监听其状态改变
+        $('.cart_list_td').find(':checkbox').change(function () {
+            // 2. 所有商品checkbox的个数
+            var count = $('.cart_list_td').length;
+            // 3. 所有勾选商品checkbox的个数
+            var count_selected = $('.cart_list_td').find(":checked").length;
+            // 4. 所有的商品都选中了,设置全选checkbox为勾选
+            if (count == count_selected) {
+                $('.settlements').find(':checkbox').prop('checked', true);
+            } else {
+                $('.settlements').find(':checkbox').prop('checked', false);
+            }
+            // 6. 更新商品的总数量和总金额
+            update_goods_info();
+        });
+
+    </script>
+
+{% endblock %}
