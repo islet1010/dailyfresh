@@ -66,7 +66,6 @@ class CartInfoView(LoginRequiredMixin, View):
 
     def get(self, request):
         """显示购物车界面"""
-
         # 获取登录用户id
         user_id = request.user.id
 
@@ -110,6 +109,53 @@ class CartInfoView(LoginRequiredMixin, View):
 
         # 响应请求，显示html界面
         return render(request, 'cart.html', context)
+
+
+class CartUpdateView(View):
+
+    def post(self, request):
+        """修改商品数量"""
+
+        if not request.user.is_authenticated():
+            return JsonResponse({'code':1, 'errmsg': '请先登录'})
+
+        # 获取参数：sku_id, count
+        sku_id = request.POST.get('sku_id')
+        count = request.POST.get('count')
+
+        # 校验参数all()
+        if not all([sku_id, count]):
+            return JsonResponse({'code':2, 'errmsg': '参数不能为空'})
+
+        # 判断商品是否存在
+        try:
+            sku = GoodsSKU.objects.get(id=sku_id)
+        except GoodsSKU.DoesNotExist:
+            return JsonResponse({'code': 3, 'errmsg': '商品不存在'})
+
+        # 判断count是否是整数
+        try:
+            count = int(count)
+        except:
+            return JsonResponse({'code': 3, 'errmsg': 'count需为整数'})
+
+        # 判断库存
+        if count > sku.stock:
+            return JsonResponse({'code': 4, 'errmsg': '库存不足'})
+
+        # 如果用户登陆，将修改的购物车数据存储到redis中
+        strict_redis = get_redis_connection()   # type : StrictRedis
+        key = 'cart_%s' % request.user.id
+        strict_redis.hset(key, sku_id, count)
+
+        # 查询购物车中商品的总数量
+        total_count = 0   # 购物车商品总数量
+        vals = strict_redis.hvals(key)  # 列表 bytes
+        for val in vals:
+            total_count += int(val)    # bytes -> int
+
+        # json方式响应添加购物车结果
+        return JsonResponse({'code': 0, 'total_count': total_count})
 
 
 

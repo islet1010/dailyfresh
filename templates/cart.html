@@ -30,7 +30,9 @@
 		<li class="col06">
 			<div class="num_add">
 				<a href="javascript:;" class="add fl">+</a>
-				<input type="text" class="num_show fl" value="{{ sku.count }}">
+				<input type="text" class="num_show fl"
+                       sku_id="{{ sku.id }}"
+                       value="{{ sku.count }}">
 				<a href="javascript:;" class="minus fl">-</a>	
 			</div>
 		</li>
@@ -40,7 +42,7 @@
     {% endfor %}
 
 	<ul class="settlements">
-		<li class="col01"><input type="checkbox" name="" checked=""></li>
+		<li class="col01"><input type="checkbox" name="" checked="true" ></li>
 		<li class="col02">全选</li>
 		<li class="col03">合计(不含运费)：<span>¥</span>
             <em>{{ total_amount }}</em><br>共计<b>{{ total_count }}</b>件商品</li>
@@ -51,6 +53,8 @@
 {% block bottom_js %}
 
     {% load staticfiles %}
+    {% csrf_token %}
+
     <script type="text/javascript" src="{% static 'js/jquery-1.12.2.js' %}"></script>
     <script type="text/javascript">
 
@@ -114,6 +118,71 @@
             // 6. 更新商品的总数量和总金额
             update_goods_info();
         });
+
+        // 刷新一行商品的小计金额
+        function update_goods_amount($ul) {
+            // 获取商品单价和数量
+            var price = $ul.find('.col05').text();
+            var count = $ul.find('.num_show').val();
+            price = parseFloat(price);
+            count = parseInt(count);
+            // 计算小计金额
+            var amount = price * count;
+            // 显示小计金额 toFixed(2): 两位小数点
+            $ul.find('.col07').html(amount.toFixed(2)+'元')
+        }
+
+        // todo: 点击加号，修改商品数量
+        $('.cart_list_td').find('.add').click(function () {
+            // alert('点击了加号');
+            // $(this): 加号a标签
+            var sku_id = $(this).next().attr('sku_id');
+            var count = $(this).next().val();
+            var csrf = $('input[name="csrfmiddlewaretoken"]').val();
+            // alert(sku_id + "   " + count + " " + csrf)
+
+            // 数量需要加1
+            count = parseInt(count);
+            count +=1;
+
+            // 定义post请求参数
+            var params = {
+                sku_id: sku_id,
+                count: count,
+                csrfmiddlewaretoken: csrf
+            };
+
+            var $input = $(this).next();
+            var $ul = $(this).parents('ul');
+
+            // 通过ajax发起post请求
+            // 请求url
+            // post参数
+            $.post('/cart/update', params, function (data) {
+                if (data.code == 0) {
+                    // 请求成功: {'code': 0, 'total_count': total_count}
+                    // 请求失败: {'code': 3, 'errmsg': 'count需为整数'}
+                    //alert('总数量：' + data.total_count)
+                    // todo: 刷新界面显示
+                    // 1.更新商品数量
+                    $input.val(count);
+                    // 2.更新商品小计金额
+                    update_goods_amount($ul);
+                    // 3. 更新勾选商品的总数量和总金额
+                    update_goods_info();
+                    // 4. 更新左上角所有商品的总数量
+                    $('.total_count').children('em').html(data.total_count)
+
+                } else {
+                    alert(data.errmsg)
+                }
+            })
+
+        })
+
+        // todo: 点击减号，修改商品数量
+
+        // todo: 手动输入商品数量，进行修改
 
     </script>
 
