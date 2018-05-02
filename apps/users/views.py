@@ -173,8 +173,12 @@ class LoginView(View):
         # 登录成功后，要跳转到next指向的界面
         next = request.GET.get('next')
         if next:
-            # 不为空，则跳转到next指向的界面: /users/address
-            return redirect(next)
+            # 如果要进入的是确认订单界面，则登录成功后，跳转到购物车界面即可
+            if next == '/orders/place':
+                response = redirect('/cart')
+            else:
+                response = redirect(next)
+            return response
         else:
             # 为空，则默认跳转到首页
             # return redirect('/index')
