@@ -20,34 +20,46 @@
 		<li class="col06">操作</li>
 	</ul>
 
-    {% for sku in skus %}
-	 <ul class="cart_list_td clearfix">
-		<li class="col01"><input type="checkbox" name="" checked="true" ></li>
-		<li class="col02"><img src="{{ sku.default_image.url }}"></li>
-		<li class="col03">{{ sku.name }}<br><em>{{ sku.price }}元/{{ sku.unit }}</em></li>
-		<li class="col04">{{ sku.unit }}</li>
-		<li class="col05">{{ sku.price }}元</li>
-		<li class="col06">
-			<div class="num_add">
-				<a href="javascript:;" class="add fl">+</a>
-				<input type="text" class="num_show fl"
-                       sku_id="{{ sku.id }}"
-                       value="{{ sku.count }}">
-				<a href="javascript:;" class="minus fl">-</a>	
-			</div>
-		</li>
-		<li class="col07">{{ sku.amount }}元</li>
-		<li class="col08"><a href="javascript:;">删除</a></li>
-	</ul>
-    {% endfor %}
+    <form method="post" action="{% url 'orders:place' %}">
+        {% csrf_token %}
 
-	<ul class="settlements">
-		<li class="col01"><input type="checkbox" name="" checked="true" ></li>
-		<li class="col02">全选</li>
-		<li class="col03">合计(不含运费)：<span>¥</span>
-            <em>{{ total_amount }}</em><br>共计<b>{{ total_count }}</b>件商品</li>
-		<li class="col04"><a href="place_order.html">去结算</a></li>
-	</ul>
+        {% for sku in skus %}
+         <ul class="cart_list_td clearfix">
+            <li class="col01">
+
+                {# post提交的参数（一键多值） #}
+                <input type="checkbox" name="sku_ids"
+                       checked="true" value="{{ sku.id }}" ></li>
+
+            <li class="col02"><img src="{{ sku.default_image.url }}"></li>
+            <li class="col03">{{ sku.name }}<br><em>{{ sku.price }}元/{{ sku.unit }}</em></li>
+            <li class="col04">{{ sku.unit }}</li>
+            <li class="col05">{{ sku.price }}元</li>
+            <li class="col06">
+                <div class="num_add">
+                    <a href="javascript:;" class="add fl">+</a>
+                    <input type="text" class="num_show fl"
+                           sku_id="{{ sku.id }}"
+                           value="{{ sku.count }}">
+                    <a href="javascript:;" class="minus fl">-</a>
+                </div>
+            </li>
+            <li class="col07">{{ sku.amount }}元</li>
+            <li class="col08"><a href="javascript:;">删除</a></li>
+        </ul>
+        {% endfor %}
+
+        <ul class="settlements">
+            <li class="col01"><input type="checkbox" name="" checked="true" ></li>
+            <li class="col02">全选</li>
+            <li class="col03">合计(不含运费)：<span>¥</span>
+                <em>{{ total_amount }}</em><br>共计<b>{{ total_count }}</b>件商品</li>
+            <li class="col04"><input type="submit" value="去结算"/></li>
+        </ul>
+    </form>
+
+
+
 {% endblock %}
 
 {% block bottom_js %}
@@ -89,6 +101,7 @@
             // 2. 获取全选checkbox的勾选状态
             // $(this): 全选checkbox
             var check = $(this).prop('checked');
+
             // alert(check)
             // 3. 获取所有商品checkbox,并进行遍历
             $('.cart_list_td').find(":checkbox").each(function () {

@@ -1,3 +1,10 @@
 from django.shortcuts import render
+from django.views.generic import View
 
-# Create your views here.
+from utils.common import LoginRequiredMixin
+
+
+class PlaceOrderView(LoginRequiredMixin, View):
+
+    def post(self):
+        pass
