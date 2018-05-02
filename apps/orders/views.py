@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.http.response import JsonResponse
 from django.shortcuts import render, redirect
 from django.views.generic import View
@@ -110,6 +111,10 @@ class PlaceOrderView(LoginRequiredMixin, View):
         total_pay = total_amount + trans_cost
 
         # 定义模板显示的字典数据
+
+        # [1,2]  ->  1,2
+        sku_ids_str = ','.join(sku_ids)
+
         context = {
             'skus': skus,
             'address': address,
@@ -117,6 +122,7 @@ class PlaceOrderView(LoginRequiredMixin, View):
             'total_amount': total_amount,
             'trans_cost': trans_cost,
             'total_pay': total_pay,
+            'sku_ids_str': sku_ids_str,
         }
 
         # 响应结果: 返回确认订单html界面
@@ -126,6 +132,7 @@ class PlaceOrderView(LoginRequiredMixin, View):
 class CommitOrderView(View):
     """提交订单"""
 
+    @transaction.atomic
     def post(self, request):
         # 登录判断
         if not request.user.is_authenticated():
@@ -147,63 +154,78 @@ class CommitOrderView(View):
         except Address.DoesNotExist:
             return JsonResponse({'code': 3, 'errmsg': '地址不能为空'})
 
-        # todo: 修改订单信息表: 保存订单数据到订单信息表中(新增一条数据)
-        total_count = 0
-        total_amount = 0
-        trans_cost = 10
+        # 创建保存点
+        point = transaction.savepoint()
+        try:
+            # todo: 修改订单信息表: 保存订单数据到订单信息表中(新增一条数据)
+            total_count = 0
+            total_amount = 0
+            trans_cost = 10
 
-        # 时间+用户id
-        order_id = datetime.now().strftime('%Y%m%d%H%M%S') + str(request.user.id)
-        order = OrderInfo.objects.create(
-            order_id=order_id,
-            total_count=total_count,
-            total_amount=total_amount,
-            trans_cost=trans_cost,
-            pay_method=pay_method,
-            user=request.user,
-            address=address,
-        )
-
-        # 获取StrictRedis对象: cart_1 = {1: 2, 2: 2}
-        strict_redis = get_redis_connection() # type: StrictRedis
-        key = 'cart_%s' % request.user.id
-        sku_ids = sku_ids_str.split(',')  # str ——> list
-
-        # todo: 核心业务: 遍历每一个商品, 并保存到订单商品表
-        for sku_id in sku_ids:
-            # 查询订单中的每一个商品对象
-            try:
-                sku = GoodsSKU.objects.get(id=sku_id)
-            except GoodsSKU.DoesNotExist:
-                return JsonResponse({'code': 4, 'errmsg': '商品不存在'})
-
-            # 获取商品数量，并判断库存
-            count = strict_redis.hget(key, sku_id)
-            count = int(count)  # bytes -> int
-            if count > sku.stock:
-                return JsonResponse({'code': 5, 'errmsg': '库存不足'})
-
-            # todo: 修改订单商品表: 保存订单商品到订单商品表（新增多条数据）
-            OrderGoods.objects.create(
-                count=count,
-                price=sku.price,
-                order=order,
-                sku=sku,
+            # 时间+用户id
+            order_id = datetime.now().strftime('%Y%m%d%H%M%S') + str(request.user.id)
+            order = OrderInfo.objects.create(
+                order_id=order_id,
+                total_count=total_count,
+                total_amount=total_amount,
+                trans_cost=trans_cost,
+                pay_method=pay_method,
+                user=request.user,
+                address=address,
             )
 
-            # todo: 修改商品sku表: 减少商品库存, 增加商品销量
-            sku.stock -= count
-            sku.sales += count
-            sku.save()
+            # 获取StrictRedis对象: cart_1 = {1: 2, 2: 2}
+            strict_redis = get_redis_connection() # type: StrictRedis
+            key = 'cart_%s' % request.user.id
+            sku_ids = sku_ids_str.split(',')  # str ——> list
 
-            # 累加商品数量和总金额
-            total_count += count
-            total_amount += sku.price * count
+            # todo: 核心业务: 遍历每一个商品, 并保存到订单商品表
+            for sku_id in sku_ids:
+                # 查询订单中的每一个商品对象
+                try:
+                    sku = GoodsSKU.objects.get(id=sku_id)
+                except GoodsSKU.DoesNotExist:
+                    # 回滚动到保存点，撤销所有的sql操作
+                    transaction.savepoint_rollback(point)
 
-        # todo: 修改订单信息表: 修改商品总数量和总金额
-        order.total_count = total_count
-        order.total_amount = total_amount
-        order.save()
+                    return JsonResponse({'code': 4, 'errmsg': '商品不存在'})
+
+                # 获取商品数量，并判断库存
+                count = strict_redis.hget(key, sku_id)
+                count = int(count)  # bytes -> int
+                if count > sku.stock:
+                    # 回滚动到保存点，撤销所有的sql操作
+                    transaction.savepoint_rollback(point)
+                    return JsonResponse({'code': 5, 'errmsg': '库存不足'})
+
+                # todo: 修改订单商品表: 保存订单商品到订单商品表（新增多条数据）
+                OrderGoods.objects.create(
+                    count=count,
+                    price=sku.price,
+                    order=order,
+                    sku=sku,
+                )
+
+                # todo: 修改商品sku表: 减少商品库存, 增加商品销量
+                sku.stock -= count
+                sku.sales += count
+                sku.save()
+
+                # 累加商品数量和总金额
+                total_count += count
+                total_amount += sku.price * count
+
+                # todo: 修改订单信息表: 修改商品总数量和总金额
+            order.total_count = total_count
+            order.total_amount = total_amount
+            order.save()
+        except:
+            # 回滚动到保存点，撤销所有的sql操作
+            transaction.savepoint_rollback(point)
+            return JsonResponse({'code': 6, 'errmsg': '创建订单失败'})
+
+        # 提交事务(保存点)
+        transaction.savepoint_commit(point)
 
         # 从Redis中删除购物车中的商品
         # cart_1 = {1: 2, 2: 2}

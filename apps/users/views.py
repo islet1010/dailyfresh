@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
+from django.core.paginator import Paginator, EmptyPage
 from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
 from django.http.response import HttpResponse
@@ -12,6 +13,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer, SignatureExpired
 from redis.client import StrictRedis
 
 from apps.goods.models import GoodsSKU
+from apps.orders.models import OrderInfo, OrderGoods
 from apps.users.models import User, Address
 from celery_tasks.tasks import send_active_mail
 from dailyfresh import settings
@@ -236,10 +238,42 @@ class UserInfoView(LoginRequiredMixin, View):
 
 
 class UserOrderView(LoginRequiredMixin, View):
-    def get(self, request):
+
+    def get(self, request, page_no):
+
+        # 查询当前登录用户所有的订单(降序排列)
+        orders = OrderInfo.objects.filter(
+            user=request.user).order_by('-create_time')
+        for order in orders:
+            # 查询某个订单下所有的商品
+            order_skus = OrderGoods.objects.filter(order=order)
+            for order_sku in order_skus:
+                # 循环每一个订单商品，计算小计金额
+                order_sku.amount = order_sku.price * order_sku.count
+
+            # 新增三个实例属性
+            # 订单状态
+            order.status_desc = OrderInfo.ORDER_STATUS.get(order.status)
+            # 实付金额
+            order.total_pay = order.trans_cost + order.total_amount
+            # 订单商品
+            order.order_skus = order_skus
+
+        # 创建分页对象
+        # 参数2：每页显示两条
+        paginator = Paginator(orders, 1)
+        # 获取page对象
+        try:
+            page = paginator.page(page_no)
+        except EmptyPage:  # 没有获取到分页
+            page = paginator.page(1)
+
         context = {
             'which_page': 2,
+            'page': page,
+            'page_range': paginator.page_range,  # 页码列表[1,2,3,4]
         }
+
         return render(request, 'user_center_order.html', context)
 
 

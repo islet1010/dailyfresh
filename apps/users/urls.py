@@ -16,7 +16,8 @@ urlpatterns = [
     # http://127.0.0.1:8000/users/active/JhbGciOi..mV4cCI6MTU
     url(r'^active/(.+)$', views.ActiveView.as_view(), name='active'),
 
-    url(r'^orders$', views.UserOrderView.as_view(), name='orders'),
+    # /users/orders/页码
+    url(r'^orders/(\d+)$', views.UserOrderView.as_view(), name='orders'),
     url(r'^address$', views.UserAddressView.as_view(), name='address'),
     url(r'^$', views.UserInfoView.as_view(), name='info'),
 
