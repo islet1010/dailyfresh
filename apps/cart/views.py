@@ -7,7 +7,7 @@ from redis.client import StrictRedis
 from apps.goods.models import GoodsSKU
 from utils.common import LoginRequiredMixin
 
-
+# 测试
 class CartDeleteView(View):
 
     # /cart/delete
